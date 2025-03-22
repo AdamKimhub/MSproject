@@ -1,5 +1,6 @@
 import pandas as pd
 from pymatgen.core import Structure
+from pathlib import Path
 
 def main():
     materials = ["high_BN", "high_P", "high_InSe", "high_GaSe", "high_MoS2", "high_WSe2", "low_MoS2", "low_WSe2"]
@@ -10,10 +11,10 @@ def main():
         the_material = parts[1]
 
         # Load the data to df
-        defects_df = pd.read_csv(f"{i}/defects.csv")
-        description_df = pd.read_csv(f"{i}/descriptors.csv")
-        structure_df = pd.read_csv(f"{i}/initial_structures.csv")
-        elements_df = pd.read_csv(f"{i}/elements.csv")
+        defects_df = pd.read_csv(Path(f"dataset/{i}/defects.csv"))
+        description_df = pd.read_csv(Path(f"dataset/{i}/descriptors.csv"))
+        structure_df = pd.read_csv(Path("dataset/initial_structures.csv"))
+        elements_df = pd.read_csv(Path("dataset/elements.csv"))
 
         
         # Prepare the descriptor df
@@ -65,7 +66,7 @@ def main():
             merged_df["total_mag"] = 0
 
         # Return the new df as csv
-        new_csv_file = f"{i}.csv"
+        new_csv_file = Path(f"dataset/{i}/{i}.csv")
         merged_df.to_csv(new_csv_file)
     
     
@@ -168,7 +169,7 @@ def get_ef(row, structure_df, elements_df, base):
     return row
 
 def energy_per_atom(row, data_base):
-    cif_file = f"{data_base}/cifs/{row["_id"]}.cif"
+    cif_file = Path(f"dataset/{data_base}/cifs/{row["_id"]}.cif")
     structure = Structure.from_file(cif_file)
     sites_no = structure.num_sites
 
