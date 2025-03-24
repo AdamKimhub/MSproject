@@ -48,6 +48,10 @@ def main():
         else:
             merged_df = merged_df.apply(lambda row: normalize(row,structure_df, the_material),axis=1)
 
+        # Replace the specific defect sites with type of defect sites
+        merged_df = merged_df.apply(lambda row: get_defect_sites(row), axis=1)
+        merged_df = merged_df.drop(columns=[col for col in merged_df.columns if "vacant_" in col or "sub_" in col])
+
         # Remove the unrequired columns and add total mag where necessary
         if "2" not in i:
             merged_df = merged_df.drop(["defects", "descriptor_id", "homo_majority", "lumo_majority",
@@ -62,11 +66,11 @@ def main():
 
         elif "2" in i and "low" in i:
             merged_df = merged_df.drop(["defects", "descriptor_id", "homo_lumo_gap", 
-                                        "band_gap", "homo", "lumo", "description"], axis=1)
+                                        "band_gap", "homo", "lumo", "description", "pbc"], axis=1)
             merged_df["total_mag"] = 0
 
         # Return the new df as csv
-        new_csv_file = Path(f"dataset/{i}/{i}.csv")
+        new_csv_file = Path(f"dataset/combined/{i}.csv")
         merged_df.to_csv(new_csv_file)
     
     
@@ -161,10 +165,10 @@ def get_ef(row, structure_df, elements_df, base):
     the_sum = sum(list_niui)
     
     # The formation energy
-    row["Formation_energy"] = E_defect - E_pristine - the_sum
+    row["formation_energy"] = E_defect - E_pristine - the_sum
 
     # The formation energy per site
-    row["Formation_energy_per_site"] = row["Formation_energy"]/total_sites
+    row["formation_energy_per_site"] = row["formation_energy"]/total_sites
 
     return row
 
@@ -173,8 +177,7 @@ def energy_per_atom(row, data_base):
     structure = Structure.from_file(cif_file)
     sites_no = structure.num_sites
 
-    row["total_sites"] = sites_no
-    row["energy_per_atom"] = row["energy"]/ row["total_sites"]
+    row["energy_per_atom"] = row["energy"]/ sites_no
 
     return row
 
@@ -191,6 +194,21 @@ def normalize(row, structure_df, base):
 
     row["norm_homo"] = row["homo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
     row["norm_lumo"] = row["lumo"] - row["E_1"] - (E_vbm_pristine - E_1_pristine)
+
+    return row
+
+def get_defect_sites(row):
+    # Get the defects in the df
+    all_columns = list(row.index)  
+    vacant_columns = [col for col in all_columns if "vacant" in col]
+    sub_columns = [col for col in all_columns if "sub" in col]
+    
+    # Get defect:site pair
+    vacant_dict = {i:row[i] for i in vacant_columns}
+    row["vacancy_sites"] = sum(vacant_dict.values())
+
+    sub_dict = {i:row[i] for i in sub_columns}
+    row["substituiton_sites"] = sum(sub_dict.values())
 
     return row
 
